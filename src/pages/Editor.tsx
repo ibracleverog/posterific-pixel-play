@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
@@ -37,12 +38,23 @@ const Editor = () => {
       const found = templates.find((t: any) => t.id === templateId);
       
       if (found) {
-        setTemplate(found);
+        // Make sure the template image is pre-loaded for best performance
+        const img = new Image();
+        img.onload = () => {
+          setTemplate(found);
+          setLoading(false);
+        };
+        img.onerror = () => {
+          toast.error("Failed to load template image");
+          setTemplate(found);
+          setLoading(false);
+        };
+        img.src = found.imageUrl;
+        img.crossOrigin = "anonymous";
       } else {
         toast.error("Template not found");
+        setLoading(false);
       }
-      
-      setLoading(false);
     }, 500);
   }, [templateId]);
   

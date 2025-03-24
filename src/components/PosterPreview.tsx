@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface PosterPreviewProps {
   templateUrl: string;
   className?: string;
-  crossOrigin?: string;
+  crossOrigin?: "anonymous" | "use-credentials" | "";
 }
 
 const PosterPreview = ({ templateUrl, className, crossOrigin = "anonymous" }: PosterPreviewProps) => {

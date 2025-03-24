@@ -21,6 +21,7 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [templateAspectRatio, setTemplateAspectRatio] = useState(1);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const templateImageRef = useRef<HTMLImageElement | null>(null);
@@ -35,6 +36,10 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     img.crossOrigin = "anonymous"; // This is important for processing images from external sources
     img.onload = () => {
       templateImageRef.current = img;
+      // Calculate and store the aspect ratio
+      setTemplateAspectRatio(img.naturalWidth / img.naturalHeight);
+      // Update canvas size
+      updateCanvasSize(img.naturalWidth / img.naturalHeight);
       renderCanvas();
     };
   }, [template.imageUrl]);
@@ -60,25 +65,25 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     renderCanvas();
   }, [position]);
   
-  const renderCanvas = () => {
+  const updateCanvasSize = (aspectRatio: number) => {
+    if (!canvasRef.current) return;
+    
+    // Maintain the template's original aspect ratio
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const maxWidth = 600;
+    canvas.width = Math.min(maxWidth, window.innerWidth - 40);
+    canvas.height = canvas.width / aspectRatio;
+  };
+  
+  const renderCanvas = () => {
+    if (!templateImageRef.current || !canvasRef.current) return;
     
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw template
-    if (templateImageRef.current) {
-      ctx.drawImage(templateImageRef.current, 0, 0, canvas.width, canvas.height);
-    }
-    
-    // Draw user image if available
-    if (userImageRef.current && userImage) {
-      composePoster(canvas, templateImageRef.current!, userImageRef.current, position);
-    }
+    composePoster(
+      canvasRef.current,
+      templateImageRef.current,
+      userImageRef.current || new Image(),
+      position
+    );
   };
   
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -88,8 +93,11 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     
     // Check if click is on the user image
     const distance = Math.sqrt(
@@ -107,8 +115,11 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     if (!isDragging || !canvasRef.current) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
     
     setPosition((prev) => ({
       ...prev,
@@ -221,7 +232,7 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
               <Slider
                 value={[position.scale]}
                 min={0.5}
-                max={2}
+                max={4} 
                 step={0.01}
                 onValueChange={handleScaleChange}
               />
@@ -283,8 +294,6 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
           <div className="relative rounded-xl overflow-hidden shadow-xl border border-border bg-secondary/30">
             <canvas
               ref={canvasRef}
-              width={600}
-              height={600}
               className="w-full h-auto touch-none"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
