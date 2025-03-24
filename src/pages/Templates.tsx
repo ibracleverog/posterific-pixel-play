@@ -7,8 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { Search, Filter } from "lucide-react";
 import PosterTemplate, { Template } from "@/components/PosterTemplate";
 
-// Mock data for templates
-const allTemplates: Template[] = [
+// Default templates as fallback
+const defaultTemplates: Template[] = [
   {
     id: "template1",
     title: "Graduation Celebration",
@@ -22,34 +22,6 @@ const allTemplates: Template[] = [
     description: "Bright and vibrant poster for summer events",
     imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000",
     category: "Event"
-  },
-  {
-    id: "template3",
-    title: "Business Conference",
-    description: "Professional template for business events",
-    imageUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=1000",
-    category: "Business"
-  },
-  {
-    id: "template4",
-    title: "Concert Announcement",
-    description: "Promote your upcoming music event with this template",
-    imageUrl: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1000",
-    category: "Music"
-  },
-  {
-    id: "template5",
-    title: "Fitness Challenge",
-    description: "Motivate participants with this energetic fitness poster",
-    imageUrl: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1000",
-    category: "Health"
-  },
-  {
-    id: "template6",
-    title: "Wedding Announcement",
-    description: "Elegant template for wedding invitations and announcements",
-    imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1000",
-    category: "Wedding"
   }
 ];
 
@@ -60,18 +32,32 @@ const categories = [
   "Business",
   "Music",
   "Health",
-  "Wedding"
+  "Wedding",
+  "Other"
 ];
 
 const Templates = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [filteredTemplates, setFilteredTemplates] = useState<Template[]>(allTemplates);
+  const [allTemplates, setAllTemplates] = useState<Template[]>([]);
+  const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
   const navigate = useNavigate();
   
+  // Load templates from localStorage
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('posterTemplates');
+    if (savedTemplates && JSON.parse(savedTemplates).length > 0) {
+      setAllTemplates(JSON.parse(savedTemplates));
+    } else {
+      // Use default templates if none found in localStorage
+      setAllTemplates(defaultTemplates);
+    }
+  }, []);
+  
+  // Filter templates when search query, category, or templates change
   useEffect(() => {
     filterTemplates();
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, allTemplates]);
   
   const filterTemplates = () => {
     let filtered = allTemplates;
@@ -93,10 +79,6 @@ const Templates = () => {
     }
     
     setFilteredTemplates(filtered);
-  };
-  
-  const handleSelectTemplate = (templateId: string) => {
-    navigate(`/editor/${templateId}`);
   };
   
   return (

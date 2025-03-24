@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 interface PosterPreviewProps {
   templateUrl: string;
   className?: string;
+  crossOrigin?: string;
 }
 
-const PosterPreview = ({ templateUrl, className }: PosterPreviewProps) => {
+const PosterPreview = ({ templateUrl, className, crossOrigin = "anonymous" }: PosterPreviewProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const imgRef = useRef<HTMLImageElement>(null);
   
@@ -28,7 +29,7 @@ const PosterPreview = ({ templateUrl, className }: PosterPreviewProps) => {
         src={templateUrl}
         alt="Poster template"
         className="w-full h-full object-cover"
-        crossOrigin="anonymous"
+        crossOrigin={crossOrigin}
         onLoad={() => setIsLoading(false)}
       />
     </div>

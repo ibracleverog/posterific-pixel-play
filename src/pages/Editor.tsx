@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
@@ -6,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import PosterEditor from "@/components/PosterEditor";
 import { toast } from "sonner";
 
-// Mock data for templates
-const templates = [
+// Default templates as fallback
+const defaultTemplates = [
   {
     id: "template1",
     title: "Graduation Celebration",
@@ -19,30 +18,6 @@ const templates = [
     title: "Summer Beach Party",
     description: "Bright and vibrant poster for summer events",
     imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000",
-  },
-  {
-    id: "template3",
-    title: "Business Conference",
-    description: "Professional template for business events",
-    imageUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=1000",
-  },
-  {
-    id: "template4",
-    title: "Concert Announcement",
-    description: "Promote your upcoming music event with this template",
-    imageUrl: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1000",
-  },
-  {
-    id: "template5",
-    title: "Fitness Challenge",
-    description: "Motivate participants with this energetic fitness poster",
-    imageUrl: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1000",
-  },
-  {
-    id: "template6",
-    title: "Wedding Announcement",
-    description: "Elegant template for wedding invitations and announcements",
-    imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1000",
   }
 ];
 
@@ -52,11 +27,14 @@ const Editor = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Simulating API call to fetch template data
+    // Fetch template from localStorage
     setLoading(true);
     
     setTimeout(() => {
-      const found = templates.find((t) => t.id === templateId);
+      const savedTemplates = localStorage.getItem('posterTemplates');
+      let templates = savedTemplates ? JSON.parse(savedTemplates) : defaultTemplates;
+      
+      const found = templates.find((t: any) => t.id === templateId);
       
       if (found) {
         setTemplate(found);
@@ -65,7 +43,7 @@ const Editor = () => {
       }
       
       setLoading(false);
-    }, 800);
+    }, 500);
   }, [templateId]);
   
   if (loading) {

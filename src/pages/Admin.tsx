@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,30 +13,14 @@ import { Upload, Trash2, Plus, LogOut } from "lucide-react";
 import { processImageFile } from "@/utils/imageUtils";
 import { logoutAdmin } from "@/utils/authUtils";
 
-// Mock templates data
-const initialTemplates = [
-  {
-    id: "template1",
-    title: "Graduation Celebration",
-    description: "Perfect for celebrating your graduation achievements",
-    imageUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1000",
-    category: "Education"
-  },
-  {
-    id: "template2",
-    title: "Summer Beach Party",
-    description: "Bright and vibrant poster for summer events",
-    imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000",
-    category: "Event"
-  },
-  {
-    id: "template3",
-    title: "Business Conference",
-    description: "Professional template for business events",
-    imageUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=1000",
-    category: "Business"
-  }
-];
+// Define the template structure
+interface Template {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  category: string;
+}
 
 const categories = [
   "Education",
@@ -56,7 +40,7 @@ interface TemplateFormData {
 }
 
 const Admin = () => {
-  const [templates, setTemplates] = useState(initialTemplates);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [formData, setFormData] = useState<TemplateFormData>({
     title: "",
     description: "",
@@ -66,6 +50,19 @@ const Admin = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const navigate = useNavigate();
+  
+  // Load templates from localStorage on initial render
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('posterTemplates');
+    if (savedTemplates) {
+      setTemplates(JSON.parse(savedTemplates));
+    }
+  }, []);
+  
+  // Save templates to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('posterTemplates', JSON.stringify(templates));
+  }, [templates]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -95,9 +92,13 @@ const Admin = () => {
       setUploadedFile(file);
       
       try {
-        const imageUrl = await processImageFile(file);
-        setFormData((prev) => ({ ...prev, imageUrl }));
-        toast.success("Template image uploaded successfully");
+        // Convert file to base64 for storage
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData((prev) => ({ ...prev, imageUrl: reader.result as string }));
+          toast.success("Template image uploaded successfully");
+        };
+        reader.readAsDataURL(file);
       } catch (error) {
         console.error("Error processing image:", error);
         toast.error("Failed to process image");
