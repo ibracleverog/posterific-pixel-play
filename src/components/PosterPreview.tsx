@@ -10,16 +10,32 @@ interface PosterPreviewProps {
 
 const PosterPreview = ({ templateUrl, className, crossOrigin = "anonymous" }: PosterPreviewProps) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [aspectRatio, setAspectRatio] = useState(1);
   const imgRef = useRef<HTMLImageElement>(null);
   
   useEffect(() => {
-    if (imgRef.current && imgRef.current.complete) {
+    setIsLoading(true);
+    
+    if (imgRef.current) {
+      if (imgRef.current.complete) {
+        handleImageLoad();
+      }
+    }
+  }, [templateUrl]);
+  
+  const handleImageLoad = () => {
+    if (imgRef.current) {
+      // Store the natural aspect ratio of the image
+      setAspectRatio(imgRef.current.naturalWidth / imgRef.current.naturalHeight);
       setIsLoading(false);
     }
-  }, []);
+  };
   
   return (
-    <div className={cn("relative rounded-xl overflow-hidden", className)}>
+    <div 
+      className={cn("relative rounded-xl overflow-hidden", className)}
+      style={{ aspectRatio: aspectRatio }}
+    >
       {isLoading && (
         <div className="absolute inset-0 bg-secondary animate-pulse" />
       )}
@@ -30,7 +46,7 @@ const PosterPreview = ({ templateUrl, className, crossOrigin = "anonymous" }: Po
         alt="Poster template"
         className="w-full h-full object-cover"
         crossOrigin={crossOrigin}
-        onLoad={() => setIsLoading(false)}
+        onLoad={handleImageLoad}
       />
     </div>
   );

@@ -38,6 +38,8 @@ export const hasTransparency = (ctx: CanvasRenderingContext2D, width: number, he
 
 /**
  * Composes a poster by combining a template and user image on a canvas.
+ * Uses a layering approach similar to Photoshop where the user image is placed below
+ * the template, and template transparency reveals the user image.
  */
 export const composePoster = (
   canvas: HTMLCanvasElement,
@@ -48,7 +50,7 @@ export const composePoster = (
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Adjust canvas size to match the template's aspect ratio
+  // Preserve template's original aspect ratio
   const aspectRatio = templateImage.naturalWidth / templateImage.naturalHeight;
   canvas.width = Math.min(600, templateImage.naturalWidth);
   canvas.height = canvas.width / aspectRatio;
@@ -56,23 +58,8 @@ export const composePoster = (
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Create a temporary canvas to check for transparency in the template
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  const tempCtx = tempCanvas.getContext('2d');
-  
-  if (!tempCtx) return;
-  
-  // Draw template on temp canvas to check transparency
-  tempCtx.drawImage(templateImage, 0, 0, tempCanvas.width, tempCanvas.height);
-  const hasTransparentAreas = hasTransparency(tempCtx, tempCanvas.width, tempCanvas.height);
-
-  // Save context state before transformations
-  ctx.save();
-
-  if (hasTransparentAreas) {
-    // First, draw the user image
+  // Step 1: Draw user image first (bottom layer)
+  if (userImage.src) {
     ctx.save();
     
     // Move to the position where we want to draw the center of the user image
@@ -82,40 +69,7 @@ export const composePoster = (
 
     // Calculate dimensions to maintain aspect ratio
     const aspectRatio = userImage.width / userImage.height;
-    let width = 300; // Base width (increased for better zoom)
-    let height = width / aspectRatio;
-
-    // Draw the user image centered at the origin (transformed position)
-    ctx.drawImage(userImage, -width / 2, -height / 2, width, height);
-    
-    // Restore context state
-    ctx.restore();
-    
-    // Draw template as mask
-    ctx.globalCompositeOperation = 'destination-in';
-    ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
-    
-    // Reset composite operation
-    ctx.globalCompositeOperation = 'source-over';
-    
-    // Draw template image again to show the non-transparent parts
-    ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
-  } else {
-    // Standard compositing (template has no transparency)
-    // Draw template first
-    ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
-    
-    // Then draw user image
-    ctx.save();
-    
-    // Move to the position where we want to draw the center of the user image
-    ctx.translate(position.x, position.y);
-    ctx.rotate((position.rotation * Math.PI) / 180);
-    ctx.scale(position.scale, position.scale);
-
-    // Calculate dimensions to maintain aspect ratio
-    const aspectRatio = userImage.width / userImage.height;
-    let width = 300; // Base width (increased for better zoom)
+    let width = 300; // Base width
     let height = width / aspectRatio;
 
     // Draw the user image centered at the origin (transformed position)
@@ -125,8 +79,11 @@ export const composePoster = (
     ctx.restore();
   }
 
-  // Restore context state
-  ctx.restore();
+  // Step 2: Draw template on top (top layer)
+  // Because we're drawing the template last, transparent areas will reveal the user image below
+  if (templateImage.src) {
+    ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
+  }
   
   // Add watermark
   addWatermark(ctx, canvas.width, canvas.height);

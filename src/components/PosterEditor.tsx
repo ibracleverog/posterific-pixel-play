@@ -232,7 +232,7 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
               <Slider
                 value={[position.scale]}
                 min={0.5}
-                max={4} 
+                max={8} 
                 step={0.01}
                 onValueChange={handleScaleChange}
               />
