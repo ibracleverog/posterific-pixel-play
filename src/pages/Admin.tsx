@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Upload, Trash2, Plus } from "lucide-react";
+import { Upload, Trash2, Plus, LogOut } from "lucide-react";
+import { processImageFile } from "@/utils/imageUtils";
+import { logoutAdmin } from "@/utils/authUtils";
 
 // Mock templates data
 const initialTemplates = [
@@ -61,6 +64,8 @@ const Admin = () => {
     imageUrl: ""
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const navigate = useNavigate();
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -71,6 +76,35 @@ const Admin = () => {
     setFormData((prev) => ({ ...prev, category: value }));
   };
   
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Check if file is an image
+      if (!file.type.match('image.*')) {
+        toast.error("Please upload an image file");
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File is too large. Maximum size is 5MB");
+        return;
+      }
+      
+      setUploadedFile(file);
+      
+      try {
+        const imageUrl = await processImageFile(file);
+        setFormData((prev) => ({ ...prev, imageUrl }));
+        toast.success("Template image uploaded successfully");
+      } catch (error) {
+        console.error("Error processing image:", error);
+        toast.error("Failed to process image");
+      }
+    }
+  };
+  
   const resetForm = () => {
     setFormData({
       title: "",
@@ -79,6 +113,7 @@ const Admin = () => {
       imageUrl: ""
     });
     setEditingId(null);
+    setUploadedFile(null);
   };
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,14 +171,26 @@ const Admin = () => {
     }
   };
   
+  const handleLogout = () => {
+    logoutAdmin();
+    toast.success("Logged out successfully");
+    navigate("/admin-login");
+  };
+  
   return (
     <div className="pt-24 pb-16">
       <div className="container-tight">
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage poster templates for your users
-          </p>
+        <div className="flex justify-between items-center mb-12 animate-fade-in">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage poster templates for your users
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -204,17 +251,43 @@ const Admin = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="imageUrl">Template Image URL</Label>
-                    <Input
-                      id="imageUrl"
-                      name="imageUrl"
-                      placeholder="Enter image URL"
-                      value={formData.imageUrl}
-                      onChange={handleInputChange}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Provide a URL to your template image (recommended size: 1000x1000px)
-                    </p>
+                    <Label>Template Image</Label>
+                    <div className="flex flex-col gap-4">
+                      <div className="border-2 border-dashed rounded-md p-6 bg-muted/50 text-center cursor-pointer" onClick={() => document.getElementById('template-image')?.click()}>
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mb-1">Click to upload template image</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
+                        <Input
+                          id="template-image"
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                      
+                      {formData.imageUrl && (
+                        <div className="relative border rounded-md overflow-hidden">
+                          <img
+                            src={formData.imageUrl}
+                            alt="Template preview"
+                            className="w-full h-48 object-cover"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, imageUrl: "" }));
+                              setUploadedFile(null);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
                 
@@ -222,6 +295,7 @@ const Admin = () => {
                   <Button
                     type="submit"
                     className="w-full sm:w-auto"
+                    disabled={!formData.imageUrl}
                   >
                     {editingId ? "Update Template" : "Add Template"}
                   </Button>

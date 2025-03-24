@@ -32,6 +32,7 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     
     const img = new Image();
     img.src = template.imageUrl;
+    img.crossOrigin = "anonymous"; // This is important for processing images from external sources
     img.onload = () => {
       templateImageRef.current = img;
       renderCanvas();
@@ -141,8 +142,24 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     
     try {
       setIsGenerating(true);
+      
+      // Create a clone of the canvas for download to avoid modifying the displayed canvas
+      const cloneCanvas = document.createElement('canvas');
+      cloneCanvas.width = canvasRef.current.width;
+      cloneCanvas.height = canvasRef.current.height;
+      
+      // Get the context of the clone
+      const cloneCtx = cloneCanvas.getContext('2d');
+      if (!cloneCtx) {
+        throw new Error("Failed to get canvas context");
+      }
+      
+      // Copy the current canvas to the clone
+      cloneCtx.drawImage(canvasRef.current, 0, 0);
+      
+      // Small delay to ensure UI updates
       setTimeout(() => {
-        downloadPoster(canvasRef.current!, template.title);
+        downloadPoster(cloneCanvas, template.title);
         toast.success("Poster downloaded successfully!");
         setIsGenerating(false);
       }, 500);
@@ -161,7 +178,22 @@ const PosterEditor = ({ template }: PosterEditorProps) => {
     
     try {
       setIsGenerating(true);
-      await sharePoster(canvasRef.current, template.title);
+      
+      // Create a clone of the canvas for sharing to avoid modifying the displayed canvas
+      const cloneCanvas = document.createElement('canvas');
+      cloneCanvas.width = canvasRef.current.width;
+      cloneCanvas.height = canvasRef.current.height;
+      
+      // Get the context of the clone
+      const cloneCtx = cloneCanvas.getContext('2d');
+      if (!cloneCtx) {
+        throw new Error("Failed to get canvas context");
+      }
+      
+      // Copy the current canvas to the clone
+      cloneCtx.drawImage(canvasRef.current, 0, 0);
+      
+      await sharePoster(cloneCanvas, template.title);
       toast.success("Poster shared successfully!");
     } catch (error) {
       console.error("Error sharing poster:", error);

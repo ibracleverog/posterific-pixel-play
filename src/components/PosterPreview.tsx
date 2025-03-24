@@ -28,6 +28,7 @@ const PosterPreview = ({ templateUrl, className }: PosterPreviewProps) => {
         src={templateUrl}
         alt="Poster template"
         className="w-full h-full object-cover"
+        crossOrigin="anonymous"
         onLoad={() => setIsLoading(false)}
       />
     </div>
